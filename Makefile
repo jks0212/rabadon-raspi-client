@@ -2,12 +2,12 @@
 CC = g++
 OPTIONS = -pthread -o # -lwiringPi -o
 STDPP = -std=c++0x
-SRCS = src/rabadon.cc src/Util.cc src/Client.cc src/SpiPino.cc src/Drone.cc src/jsoncpp.cpp
-OBJS = rabadon.o Util.o Client.o SpiPino.o Drone.o jsoncpp.o
+SRCS = src/rabadon.cc src/Util.cc src/Client.cc src/SpiPino.cc src/Drone.cc src/jsoncpp.cpp src/http/SimpleHttp.cc src/setting/Setting.cc
+OBJS = rabadon.o Util.o Client.o SpiPino.o Drone.o jsoncpp.o SimpleHttp.o Setting.o
 TARGET = rabadon
 TARGETSERV = rabadon.service
 TARGETCONF = rabadon.conf
-TARGETSETTINGS = dorne_settings.json
+TARGETSETTINGS = settings.json
 PIDFILE = /run/$(TARGET).pid
 EXECPATH = /usr/local/bin/
 ETCPATH = /usr/local/etc/rabadon/
@@ -21,6 +21,7 @@ $(TARGET): $(OBJS)
 
 $(OBJS): $(SRCS)
 	$(CC) -c $(SRCS) $(STDPP)
+
 
 clean:
 	rm -f $(OBJS) $(TARGET)

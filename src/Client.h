@@ -1,5 +1,6 @@
 #include "Drone.h"
 #include "SpiPino.h"
+#include "data/Data.h"
 
 #ifndef _CLIENT_H
 #define _CLIENT_H
@@ -29,17 +30,29 @@ public:
 private:
 	SpiPino* spi;
 
+	static const std::string API_SERVER_ADDR;
 	static const char kServerAddr[];//[20] = "45.32.249.203";
 	static const int kPort = 81;
+
+	static std::string drone_id;
+	static DronePid dronePid;
+	static DroneTrim droneTrim;
 
 	const unsigned short kReadBufSize = 4096;
 
 	static const unsigned short kRecvBufSize = 4096;
 
+	static std::string user_id;
+//	static std::string drone_id;
+
+	int checkSettings();
 	void recvCodeHandler(char code_data[]);
 	void sendToIno(char code_data[]); // will be deprecaed
 	void sendControlToIno(std::string data);
 	void sendSettingsToIno(std::string data);
+
+
+	void sendSettingsToIno(DronePid pid);
 /*
 	static const unsigned short kMotorBufSize = 44;
 	static const unsigned short kCodeLen = 3;

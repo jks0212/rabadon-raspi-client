@@ -10,17 +10,21 @@
 #include <stdint.h>
 #include "Client.h"
 #include "Util.h"
+
 //#include "Serial.h"
 #include "SpiPino.h"
 #include "json/json.h"
+#include "data/Data.h"
+#include "setting/Setting.h"
+#include "http/SimpleHttp.h"
 
 using namespace std;
 using namespace CLIENT_CONST;
 using namespace SPIPINO_CONST;
 
 Client::Client(){
-	spi = SpiPino::getInstance();
-//	ser = Serial::getInstance();
+//	spi = SpiPino::getInstance();
+	spi = NULL;
 }
 
 
@@ -39,74 +43,158 @@ char Client::cFcDetached[kCodeBufSize] = "502}";		// send code
 */
 const char Client::kServerAddr[] = "45.32.249.203";
 
+const string Client::API_SERVER_ADDR = "13.124.102.238";
+
+string Client::drone_id;
+DronePid Client::dronePid;
+DroneTrim Client::droneTrim;
 
 int Client::client_sock;
 bool Client::tcp_status = false;
 
+
+int Client::checkSettings(){
+	string user_mail = Util::conf.getMail();
+	string drone_id = Util::conf.getDroneId();
+}
+
 int Client::connectServer(){
-	int is_login = 0;
 	struct sockaddr_in server_addr;
 
 	if((client_sock = socket(PF_INET, SOCK_STREAM, 0)) < 0){
-		cout << "fail to create socket" << endl;
+		cout << "Fail to create socket." << endl;
 		return -1;
 	}
-
-	memset(&server_addr, 0, sizeof(server_addr));
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(kPort);
-	server_addr.sin_addr.s_addr = inet_addr(kServerAddr);
-	if(connect(client_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0){
-		cout << "failed to connect to the server" << endl;
-		close(client_sock);
-		return -1;
-	}
-
+	
 	char code[5];
-	// 서버에 드론 연결 됐다고 보내기
-	sprintf(code, "%d}", SEND_ACCOUNT);
-	if(send(client_sock, code, sizeof(code), 0) <= 0){
-		cout << "failed to send server." << endl;
-		return -1;
-	}
 	char rBuf[4] = {0};
-	if(recv(client_sock, rBuf, sizeof(rBuf), 0) <= 0){
-		cout << "failed to connect to the server." << endl;
-		close(client_sock);
-		return -1;
-	} else if(rBuf[0] == '1' && rBuf[1] == '0' && rBuf[2] == '0'){
-		cout << "connected to the server." << endl;
+
+
+	SimpleHttp simpleHttp;
+	Setting setting;
+
+	string serial_num = Setting::getSerialNumber();
+	if(serial_num.empty()){
+		simpleHttp.addHeader("Content-Type", "application/json");
+		HttpResponse* res = simpleHttp.post(API_SERVER_ADDR, "/v1/drone/serial");
+		if(res == NULL){
+			cout << "Client->connectServer(): Fail to request serial number." << endl;
+			return -1;
+		} else{
+			if(res->code != 204){
+				cout << "Client->connectServer(): " << res->json["error"] << endl;
+			}
+
+			if(res->json["serial"] == Json::nullValue){
+				cout << "Client->connectServer(): Fail to get a new serial." << endl;
+				return -1;
+			}
+
+			try{
+				serial_num = res->json["serial"].asString();
+			} catch(Json::LogicError const & e){
+				cout << "Client->connectServer(): " << e.what() << endl;
+				return -1;
+			}
+			if(setting.setSerialNumber(serial_num) < 0){
+				cout << "Client->connectServer(): Fail to set serial." << endl;
+				return -1;
+			}
+		}
 	}
 
-	string user_mail = Util::conf.getMail();
-	string drone_no = Util::conf.getDroneNo();
-	// mail 또는 drone no가 없다면
-	if(user_mail == "" || drone_no == ""){
-		// serial number가 없으면 서버에 요청해서 받아오기
-		string sNum = Util::conf.getSerialNumber();
-		if(sNum == ""){
-			// serial number가 없다면 요청
-			memset(code ,0, sizeof(code));
-			sprintf(code, "%d}", REQ_SERIAL);
-			if(send(client_sock, code, sizeof(code), 0) < 0){
-				cout << "failed to request serial number." << endl;
-				close(client_sock);
-				return -1;
-			}
-			char recv_sNum[30] = {0};
-	        if(recv(client_sock, recv_sNum, 30, 0) < 0){
-	            cout << "failed to receive serial number." << endl;
-	            close(client_sock);
-	            return -1;
-	        }
-			if(strstr(recv_sNum, "(no_serial)")){
-				close(client_sock);
-				sleep(30);
-				return -1;
-			}
-			Util::conf.setSerialNumber(recv_sNum);
+
+	HttpResponse* res;
+//	string drone_id;
+	res = simpleHttp.get(API_SERVER_ADDR, "/v1/drone/serial/" + serial_num);
+	if(res == NULL){
+		cout << "Client->connectServer(): Fail to request drone id" << endl;
+		return -1;
+	} else{
+		if(res->code != 200){
+			cout << "Client->connectServer(): " << res->json["error"] << endl;
+			return -1;
 		}
 
+		if(res->json["drone_id"] == Json::nullValue){
+			cout << "Client->connectServer(): Fail to get a drone id" << endl;
+			return -1;
+		}
+
+		try{
+			drone_id = res->json["drone_id"].asString();
+		} catch(Json::LogicError const & e){
+			cout << "Client->connectServer(): " << e.what() << endl;
+			return -1;
+		}
+	}
+	DronePid dronePid;
+	DroneTrim droneTrim;
+	res = simpleHttp.get(API_SERVER_ADDR, "/v1/drone/" + drone_id);
+	if(res == NULL){
+		cout << "Client->connectServer(): Fail to request drone PID and Trim" << endl;
+		return -1;
+	} else{
+		if(res->code != 200){
+			cout << "Client->connectServer(): " << res->json["error"] << endl;
+			return -1;
+		}
+
+		if(res->json["drone"] == Json::nullValue){
+			cout << "Client->connectServer(): Fail to get a drone PID and Trim" << endl;
+			return -1;
+		}
+
+		try{
+			dronePid.roll_outer_p = res->json["drone"]["pid"]["roll"]["outer_p"].asDouble();
+			dronePid.roll_p = res->json["drone"]["pid"]["roll"]["p"].asDouble();
+			dronePid.roll_i = res->json["drone"]["pid"]["roll"]["i"].asDouble();
+			dronePid.roll_d = res->json["drone"]["pid"]["roll"]["d"].asDouble();
+			dronePid.pitch_outer_p = res->json["drone"]["pid"]["pitch"]["outer_p"].asDouble();
+			dronePid.pitch_p = res->json["drone"]["pid"]["pitch"]["p"].asDouble();
+			dronePid.pitch_i = res->json["drone"]["pid"]["pitch"]["i"].asDouble();
+			dronePid.pitch_d = res->json["drone"]["pid"]["pitch"]["d"].asDouble();
+			dronePid.yaw_outer_p = res->json["drone"]["pid"]["yaw"]["outer_p"].asDouble();
+			dronePid.yaw_p = res->json["drone"]["pid"]["yaw"]["p"].asDouble();
+			dronePid.yaw_i = res->json["drone"]["pid"]["yaw"]["i"].asDouble();
+			dronePid.yaw_d = res->json["drone"]["pid"]["yaw"]["d"].asDouble();
+			droneTrim.roll = res->json["drone"]["trim"]["roll"].asDouble();
+			droneTrim.pitch = res->json["drone"]["trim"]["pitch"].asDouble();
+			droneTrim.yaw = res->json["drone"]["trim"]["yaw"].asDouble();
+		} catch(Json::LogicError const & e){
+			cout << "Client->connectServer(): " << e.what() << endl;
+			return -1;
+		}
+	}
+
+	sendSettingsToIno(dronePid);
+
+
+/*
+	string user_id = Setting::getUserId();
+	if(user_id.empty()){
+		
+	}
+
+	string user_mail;
+*/
+
+
+/*
+	string user_id = Setting::getMail();
+	if(user_id.empty()){
+		
+	}
+*/
+
+
+
+/*
+	string drone_no;
+
+	// mail 또는 drone no가 없다면
+	if(user_mail.empty() || drone_no.empty()){
+		// serial number가 없으면 서버에 요청해서 받아오기
 		// mail이 없다면 요청
 		if(user_mail == ""){
 			string req_mail = REQ_MAIL + "," + Util::conf.getSerialNumber() + "}";
@@ -129,6 +217,9 @@ int Client::connectServer(){
 			}
 			Util::conf.setMail(recv_mail);
 		}
+
+
+
 
 		// 드론 번호가 없다면 요청
 		if(drone_no == ""){
@@ -173,7 +264,7 @@ int Client::connectServer(){
 	}
 	//서버에 드론 번호 보내기
 	sprintf(code, "%d", SEND_DRONE_NO);
-	string submit_dNo = string(code) + "," + Util::conf.getDroneNo() + "}";
+	string submit_dNo = string(code) + "," + Util::conf.getDroneId() + "}";
 	if(send(client_sock, submit_dNo.c_str(), submit_dNo.length(), 0) < 0){
 		cout << "failed to send drone_no to server." << endl;
 		close(client_sock);
@@ -198,7 +289,7 @@ int Client::connectServer(){
 //#TODO		Ahrs::applyPidValues(Util::conf.getPidValues());
 //#TODO		Ahrs::applyTrimValues(Util::conf.getTrimValues());
 	}
-
+*/
 	// for Non-Block socket
 	fcntl(client_sock, F_SETFL, O_NONBLOCK);
 
@@ -287,7 +378,8 @@ void Client::recvCodeHandler(char code_data[]){
 		cout << "ctrl : " << ctrl << endl;
 		sendControlToIno(data);
 	} else if(code == RECV_SETTING){
-		sendSettingsToIno(Util::rabadonDecoder(data));
+	//	sendSettingsToIno(Util::rabadonDecoder(data));
+		sendSettingsToIno(dronePid);
 		cout << cd << endl;
 	}
 }
@@ -315,6 +407,22 @@ void Client::sendControlToIno(string data){
 	int p = 100 * (data[9] - 48) + 10 * (data[10] - 48) + (data[11] - 48);
 	power |= p;
 	spi->transfer(SET_POWER, power);
+}
+
+void Client::sendSettingsToIno(DronePid pid){
+	spi->transfer(SET_ROLL_OUTER_P, pid.roll_outer_p);
+	spi->transfer(SET_ROLL_P, pid.roll_p);
+	spi->transfer(SET_ROLL_I, pid.roll_i);
+	spi->transfer(SET_ROLL_D, pid.roll_d);
+	spi->transfer(SET_PITCH_OUTER_P, pid.pitch_outer_p);
+	spi->transfer(SET_PITCH_P, pid.pitch_p);
+	spi->transfer(SET_PITCH_I, pid.pitch_i);
+	spi->transfer(SET_PITCH_D, pid.pitch_d);
+	spi->transfer(SET_YAW_OUTER_P, pid.yaw_outer_p);
+	spi->transfer(SET_YAW_P, pid.yaw_p);
+	spi->transfer(SET_YAW_I, pid.yaw_i);
+	spi->transfer(SET_YAW_D, pid.yaw_d);
+
 }
 
 void Client::sendSettingsToIno(string data){

@@ -13,6 +13,8 @@
 //#include "I2cPi.h"
 #include "SpiPino.h"
 
+#include "json/json.h"
+
 using namespace std;
 using namespace SPIPINO_CONST;
 
@@ -21,6 +23,8 @@ void serialThread();
 
 int main(int argc, char* argv[]){
 	signal(SIGPIPE, SIG_IGN);
+
+	tcpThread();
 
 	if(argc == 1 || (argc == 2 && strstr(argv[1], "start"))){
 		Util::createPidFile();
@@ -46,6 +50,7 @@ void tcpThread(){
 		if(clnt.connectServer() != -1){
 			clnt.recvCode();
 		}
+		sleep(30);
 	}
 }
 

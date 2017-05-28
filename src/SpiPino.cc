@@ -45,34 +45,34 @@ SpiPino* SpiPino::getInstance(){
 int SpiPino::init(){
 	file = open(device, O_RDWR);
 	if(file < 0){
-		perror("can't open device");
+		perror("SpiPino->init()[file]: ");
 		return -1;
 	}
 	// spi mode
 	if(ioctl(file, SPI_IOC_WR_MODE, &mode) < 0){
-		perror("can't set spi mode");
+		perror("SpiPino->init()[SPI_IOC_WR_MODE]: ");
 		return -1;
 	}
 	if(ioctl(file, SPI_IOC_RD_MODE, &mode) < 0){
-		perror("can't get spi mode");
+		perror("SpiPino->init()[SPI_IOC_RD_MODE]: ");
 		return -1;
 	}
 	// bits per word
 	if(ioctl(file, SPI_IOC_WR_BITS_PER_WORD, &bits) < 0){
-		perror("can't set bits per word");
+		perror("SpiPino->init()[SPI_IOC_WR_BITS_PER_WORD]: ");
 		return -1;
 	}
 	if(ioctl(file, SPI_IOC_RD_BITS_PER_WORD, &bits) < 0){
-		perror("can't get bits per word");
+		perror("SpiPino->init()[SPI_IOC_RD_BITS_PER_WORD]: ");
 		return -1;
 	}
 	// max speed Hz
 	if(ioctl(file, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0){
-		perror("can't set max speed Hz");
+		perror("SpiPino->init()[SPI_IOC_WR_MAX_SPEED_HZ]: ");
 		return -1;
 	}
 	if(ioctl(file, SPI_IOC_RD_MAX_SPEED_HZ, &speed) < 0){
-		perror("can't get max speed Hz");
+		perror("SpiPino->init()[SPI_IOC_RD_MAX_SPEED_HZ]: ");
 		return -1;
 	}
 }
@@ -97,7 +97,7 @@ void SpiPino::transfer(const int code, int data){
 	};
 
 	if(ioctl(file, SPI_IOC_MESSAGE(1), &tr) < 1){
-		perror("can't send spi message");
+		perror("SpiPino->transfer()[SPI_IOC_MESSAGE]: ");
 		return;
 	}
 }

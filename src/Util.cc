@@ -10,7 +10,6 @@
 using namespace std;
 
 // Util Class Methods
-
 pid_t Util::pid = getpid();
 Config Util::conf;
 
@@ -122,18 +121,26 @@ string Util::rabadonDecoder(string str){
 ifstream Config::ifs_rc;
 ofstream Config::ofs_rc;
 
+//Deprecated
+ifstream Config::ifs_ds;
+ofstream Config::ofs_ds;
+
+ifstream Config::ifs_settings;
+ofstream Config::ofs_settings;
+
+
 int Config::openConfigInstream(){
-	ifs_rc.open("/usr/local/etc/rabadon/rabadon.conf", ios::in);
+	ifs_rc.open("/usr/local/etc/rabadon/settings.json", ios::in);
 	if(ifs_rc.is_open() == false){
-		cout << "failed to open rabadon.conf file." << endl;
+		cout << "failed to open settings.json file." << endl;
 		return -1;
 	}
 }
 
 int Config::openConfigOutstream(){
-	ofs_rc.open("/usr/local/etc/rabadon/rabadon.conf", ios::trunc);
+	ofs_rc.open("/usr/local/etc/rabadon/config.json", ios::trunc);
 	if(ofs_rc.is_open() == false){
-		cout << "failed to write rabadon.conf file." << endl;
+		cout << "failed to write rabadon-conf.json file." << endl;
 		return -1;
 	}
 
@@ -147,65 +154,119 @@ void Config::closeConfigOutstream(){
 	ofs_rc.close();
 }
 
-ifstream Config::ifs_ds;
-ofstream Config::ofs_ds;
-
 int Config::openSettingsInstream(){
-	ifs_ds.open("/usr/local/etc/rabadon/drone_settings.json", ios::in);
-	if(ifs_ds.is_open() == false){
-		cout << "failed to open drone_settings.json file." << endl;
+	ifs_settings.open("settings.json", ios::in);
+	if(ifs_settings.is_open() == false){
+		cout << "Fail to open settings.json." << endl;
 		return -1;
 	}
 }
 
 int Config::openSettingsOutstream(){
-	ofs_ds.open("/usr/local/etc/rabadon/drone_settings.json", ios::trunc);
-	if(ofs_ds.is_open() == false){
-		cout << "failed to write drone_settings.json file." << endl;
+	ofs_settings.open("settings.json", ios::trunc);
+	if(ofs_settings.is_open() == false){
+		cout << "Fail to write settings.json." << endl;
 		return -1;
 	}
 }
 
 void Config::closeSettingsInstream(){
-	ifs_ds.close();
+	ifs_settings.close();
 }
 
 void Config::closeSettingsOutstream(){
-	ofs_ds.close();
+	ofs_settings.close();
 }
 
 
 string Config::getMail(){
-	if(openConfigInstream() == -1) return "";
-	string mail;
+	if(openSettingsInstream() == -1) return "";
+	string rs = "";
 	string temp;
-	while(!ifs_rc.eof()){
-		getline(ifs_rc, temp);
-		if(temp.find("email=") != string::npos){
-			mail = temp.substr(6);
-			break;
-		}
+	while(getline(ifs_settings, temp)){
+		rs += temp;
 	}
-	closeConfigInstream();
+	closeSettingsInstream();
+
+	Json::Reader reader;
+	Json::Value root;
+	bool isParsed = reader.parse(rs, root);
+
+	if(!isParsed){
+		cout << "getMail(): Fail to parse json." << endl;
+		return "";
+	}
+
+	Json::Value jsonVal = root["user"]["mail"];
+	if(jsonVal == Json::nullValue){
+		cout << "getMail(): Fail to parse json." << endl;
+		return "";
+	}
+	Json::FastWriter fastWriter;
+	string mail = fastWriter.write(jsonVal);
+
 	return mail;
 }
 
-string Config::getDroneNo(){
-	if(openConfigInstream() == -1) return "";
-	string drone_no;
+string Config::getDroneId(){
+	if(openSettingsInstream() == -1) return "";
+	string rs;
 	string temp;
-	while(!ifs_rc.eof()){
-		getline(ifs_rc, temp);
-		if(temp.find("drone_no=") != string::npos){
-			drone_no = temp.substr(9);
-			break;
-		}
+	while(getline(ifs_settings, temp)){
+		rs += temp;
 	}
-	closeConfigInstream();
-	return drone_no;
+	closeSettingsInstream();
+
+	Json::Reader reader;
+	Json::Value root;
+	bool isParsed = reader.parse(rs, root);
+
+	if(!isParsed){
+		cout << "getDroneId(): Fail to parse json." << endl;
+		return "";
+	}
+
+	Json::Value jsonVal = root["drone"]["id"];
+	if(jsonVal == Json::nullValue){
+		cout << "getDroneId(): Fail to parse json." << endl;
+		return "";
+	}
+	Json::FastWriter fastWriter;
+	string drone_id = fastWriter.write(jsonVal);
+
+	return drone_id;
 }
 
 string Config::getSerialNumber(){
+	if(openSettingsInstream() == -1) return "";
+	string rs;
+	string temp;
+	while(getline(ifs_settings, temp)){
+		rs += temp;
+	}
+	closeSettingsInstream();
+
+	Json::Reader reader;
+	Json::Value root;
+	bool isParsed = reader.parse(rs, root);
+
+	if(!isParsed){
+		cout << "getSerialNumber(): Fail to parse json." << endl;
+		return "";
+	}
+
+	Json::Value jsonVal = root["serial"]["number"];
+	if(jsonVal == Json::nullValue){
+		cout << "getSerialNumber(): Fail to parse json." << endl;
+		return "";
+	}
+	Json::FastWriter fastWriter;
+	string serial_num = fastWriter.write(jsonVal);
+
+	return serial_num;
+
+
+	/*
 	if(openConfigInstream() == -1) return "";
 	string sn;
 	string temp;
@@ -218,6 +279,7 @@ string Config::getSerialNumber(){
 	}
 	closeConfigInstream();
 	return sn;
+	*/
 }
 
 PID Config::getPidValues(){

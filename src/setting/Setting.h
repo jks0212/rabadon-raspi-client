@@ -1,16 +1,42 @@
-#ifndef _UTIL_H
-#define _UTIL_H
+#ifndef _SETTING_H
+#define _SETTING_H
 
-#include <unistd.h>
 #include <fstream>
-#include "Drone.h"
 
-namespace UTIL_CONST{
+namespace SETTING_CONST{
 	enum{
 
 	};
 }
 
+class Setting{
+	private:
+		static std::string EMPTY_STR;
+
+		static std::ifstream cIfsSetting;
+		static std::ofstream cOfsSetting;
+
+	public:
+		static int openSettingInstream();
+		static int openSettingOutstream();
+		static void closeSettingInstream();
+		static void closeSettingOutstream();
+
+//	public:
+		static std::string getUserId();
+		static std::string getDroneId();
+		static std::string getSerialNumber();
+//		static Pid gtPidValues();
+//		static Trim getTrimValues();
+
+		static int setUserId(std::string user_id);
+		static int setDroneNo(std::string dr_value);
+		static int setSerialNumber(std::string serial_num);
+		static int setDroneSettings(std::string set_values);
+
+};
+
+/*
 class Config{
 private:
 	static std::ifstream ifs_rc;
@@ -45,20 +71,6 @@ public:
 //	static int setPidValues2(std::string pid_values);
 //	static int setTrimValues(std::string trim_values);
 };
-
-class Util{
-private:
-	static pid_t pid;
-public:
-	static pid_t getPid();
-	static int createPidFile();
-	static void	stopProcess();
-	static Config conf;
-//	static std::string makeHexCode(int code);
-	static std::string strSplit(std::string str_origin, std::string str_tok);
-	static std::string rabadonEncoder(std::string str);
-	static std::string rabadonDecoder(std::string str);
-};
-
+*/
 #endif
 
