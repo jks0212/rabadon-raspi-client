@@ -8,7 +8,8 @@
 namespace CLIENT_CONST{
 	enum{
 		STAT_USER, STAT_ALIVE, STAT_CONTROL,
-		SEND_ACCOUNT = 100,
+	//	SEND_ACCOUNT = 100,
+		SEND_DRONE_ID = 100,
 		USER_ACCESS = 101,
 		REQ_SERIAL = 110,
 		REQ_MAIL = 111,
@@ -33,6 +34,8 @@ private:
 	static const std::string API_SERVER_ADDR;
 	static const char kServerAddr[];//[20] = "45.32.249.203";
 	static const int kPort = 81;
+	static const std::string P2P_SERVER_ADDR;
+	static const int P2P_SERVER_PORT = 81;
 
 	static std::string drone_id;
 	static DronePid dronePid;

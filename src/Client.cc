@@ -42,7 +42,7 @@ char Client::cFcAttached[kCodeBufSize] = "501}";		// send code
 char Client::cFcDetached[kCodeBufSize] = "502}";		// send code
 */
 const char Client::kServerAddr[] = "45.32.249.203";
-
+const string Client::P2P_SERVER_ADDR = "13.124.102.238";
 const string Client::API_SERVER_ADDR = "13.124.102.238";
 
 string Client::drone_id;
@@ -59,16 +59,6 @@ int Client::checkSettings(){
 }
 
 int Client::connectServer(){
-	struct sockaddr_in server_addr;
-
-	if((client_sock = socket(PF_INET, SOCK_STREAM, 0)) < 0){
-		cout << "Fail to create socket." << endl;
-		return -1;
-	}
-	
-	char code[5];
-	char rBuf[4] = {0};
-
 
 	SimpleHttp simpleHttp;
 	Setting setting;
@@ -167,129 +157,54 @@ int Client::connectServer(){
 		}
 	}
 
-	sendSettingsToIno(dronePid);
 
 
+	struct sockaddr_in server_addr;
+
+	if((client_sock = socket(PF_INET, SOCK_STREAM, 0)) < 0){
+		cout << "Client->connectServer(): Fail to create P2P socket." << endl;
+		return -1;
+	}
+
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_port = htons(P2P_SERVER_PORT);
+	server_addr.sin_addr.s_addr = inet_addr(P2P_SERVER_ADDR.c_str());
+	if(connect(client_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0){
+		cout << "Client->connectServer(): Fail to connect to P2P server." << endl;
+		return -1;
+	}
 /*
-	string user_id = Setting::getUserId();
-	if(user_id.empty()){
-		
-	}
-
-	string user_mail;
-*/
-
-
-/*
-	string user_id = Setting::getMail();
-	if(user_id.empty()){
-		
-	}
-*/
-
-
-
-/*
-	string drone_no;
-
-	// mail 또는 drone no가 없다면
-	if(user_mail.empty() || drone_no.empty()){
-		// serial number가 없으면 서버에 요청해서 받아오기
-		// mail이 없다면 요청
-		if(user_mail == ""){
-			string req_mail = REQ_MAIL + "," + Util::conf.getSerialNumber() + "}";
-		//	strncat(req_mail, Util::conf.getSerialNumber().c_str(), 30);
-			if(send(client_sock, req_mail.c_str(), req_mail.length(), 0) < 0){
-				cout << "failed to request mail." << endl;
-				close(client_sock);
-				return -1;
-			}
-			char recv_mail[60] = {0};
-			if(recv(client_sock, recv_mail, 60, 0) < 0){
-				cout << "failed to receive mail." << endl;
-				close(client_sock);
-				return -1;
-			}
-			if(strstr(recv_mail, "(no_mail)")){
-				close(client_sock);
-				sleep(30);
-				return -1;
-			}
-			Util::conf.setMail(recv_mail);
-		}
-
-
-
-
-		// 드론 번호가 없다면 요청
-		if(drone_no == ""){
-			string req_dNo = REQ_DRONE_NO + "," + Util::conf.getSerialNumber() + "}";
-	//		strncat(req_dNo, Util::conf.getSerialNumber().c_str(), 30);
-			if(send(client_sock, req_dNo.c_str(), req_dNo.length(), 0) < 0){
-				cout << "failed to request drone no." << endl;
-				close(client_sock);
-				return -1;
-			}
-			char recv_dNo[30] = {0};
-			if(recv(client_sock, recv_dNo, 30, 0) < 0){
-				cout << "failed to receive drone no." << endl;
-				close(client_sock);
-				return -1;
-			}
-			if(strstr(recv_dNo, "(no_drone)")){
-				cout << "not registered yet." << endl;
-				close(client_sock);
-				sleep(30);
-				return -1;
-			}
-			Util::conf.setDroneNo(recv_dNo);
-		}
-	}
-
-	// 서버에 메일 보내기
-	sprintf(code, "%d", SEND_MAIL);
-	string submit_mail = string(code) + "," + Util::conf.getMail() + "}";
-	if(send(client_sock, submit_mail.c_str(), submit_mail.length(), 0) < 0){
-		cout << "failed to send mail to server." << endl;
+	string identity = "100";
+	if(send(client_sock, identity.c_str(), identity.length(), 0) < 0){
+		cout << "Client->connectServer(): Fail to send identity to server." << endl;
 		close(client_sock);
 		return -1;
-	}
-	memset(rBuf, 0, sizeof(rBuf));
-	if(recv(client_sock, rBuf, 4, 0) <= 0){
-		cout << "failed to receive mail response." << endl;
-		close(client_sock);
-		return -1;
-	} else if(rBuf[0] == '1' && rBuf[1] == '1' && rBuf[2] == '3'){
-		cout << "mail response received." << endl;
-	}
-	//서버에 드론 번호 보내기
-	sprintf(code, "%d", SEND_DRONE_NO);
-	string submit_dNo = string(code) + "," + Util::conf.getDroneId() + "}";
-	if(send(client_sock, submit_dNo.c_str(), submit_dNo.length(), 0) < 0){
-		cout << "failed to send drone_no to server." << endl;
-		close(client_sock);
-		return -1;
-	}
-	memset(rBuf, 0, sizeof(rBuf));
-	if(recv(client_sock, rBuf, 4, 0) <= 0){
-		cout << "failed to receive drone number response." << endl;
-		close(client_sock);
-		return -1;
-	} else if(rBuf[0] == '1' && rBuf[1] == '1' && rBuf[2] == '4'){
-		cout << "drone number response received." << endl;
-	}
-	// PID 받아오기
-	sprintf(code, "%d}", RECV_SETTING);
-	send(client_sock, code, sizeof(code), 0);
-	char settings_buf[4096] = {0};
-	if(recv(client_sock, settings_buf, sizeof(settings_buf), 0) > 0){
-		cout << "settings are received." << endl;
-		Util::conf.setDroneSettings(settings_buf);
-		sendSettingsToIno(Util::rabadonDecoder(settings_buf));
-//#TODO		Ahrs::applyPidValues(Util::conf.getPidValues());
-//#TODO		Ahrs::applyTrimValues(Util::conf.getTrimValues());
 	}
 */
+	char code[4];
+	sprintf(code, "%d", SEND_DRONE_ID);
+	string code_drone_id = string(code) + drone_id + '\n';
+	if(send(client_sock, code_drone_id.c_str(), code_drone_id.length(), 0) < 0){
+		cout << "Client->connectServer(): Fail to send DroneID to server." << endl;
+		close(client_sock);
+		return -1;
+	}
+
+	char buff[100];
+	if(recv(client_sock, buff, 100, 0) < 0){
+		cout << "Client->connectServer(): Fail to receive CODE DroneID response" << endl;
+		close(client_sock);
+		return -1;
+	}
+
+	string _buff = buff;
+	string code_res = _buff.substr(0, _buff.find('\n'));
+	if(code_res.compare("200") != 0){
+		cout << "Client->connectServer(): P2P Server -> (" + code_res + ")" << endl;
+		close(client_sock);
+		return -1;
+	}
+
 	// for Non-Block socket
 	fcntl(client_sock, F_SETFL, O_NONBLOCK);
 
@@ -323,7 +238,7 @@ void Client::recvCode(){
 		_alive_cycle += loop_cycle;
 		if(alive_cycle <= _alive_cycle){
 			char code[5];
-			sprintf(code, "%d}", ALIVE_CODE);
+			sprintf(code, "%d\n", ALIVE_CODE);
 			send(client_sock, code, strlen(code), 0);
 			_alive_cycle = 0;
 		}
@@ -345,7 +260,7 @@ void Client::recvCode(){
 		for(int i=0; i<rLen; i++){
 			memset(rBuf, 0, sizeof(rBuf));
 			for(int k=0; k<rLen; k++, i++){
-				if(recv_buf[i] == '}'){
+				if(recv_buf[i] == '\n'){
 					i++;
 					break;
 				}

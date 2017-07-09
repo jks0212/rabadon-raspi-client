@@ -14,20 +14,20 @@ string Setting::EMPTY_STR = "";
 ifstream Setting::cIfsSetting;
 ofstream Setting::cOfsSetting;
 
-string SETTING_FILE = "setting.json";
+string SETTING_FILE = "settings.json";
 
 int Setting::openSettingInstream(){
-	cIfsSetting.open("setting.json");//, ios::in);
+	cIfsSetting.open(SETTING_FILE);//, ios::in);
 	if(cIfsSetting.is_open() == false){
-		cout << "Setting->openSettingInstream(): Fail to open setting.json." << endl;
+		cout << "Setting->openSettingInstream(): Fail to open setting file." << endl;
 		return -1;
 	}
 }
 
 int Setting::openSettingOutstream(){
-	cOfsSetting.open("setting.json");//, ios::in);
+	cOfsSetting.open(SETTING_FILE);//, ios::in);
 	if(cOfsSetting.is_open() == false){
-		cout << "Setting->openSettingOutstream(): Fail to open setting.json." << endl;
+		cout << "Setting->openSettingOutstream(): Fail to open setting file." << endl;
 		return -1;
 	}
 }
