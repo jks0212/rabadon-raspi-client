@@ -256,12 +256,16 @@ void Client::recvCode(){
 		int rLen = 0;
 		if((rLen = recv(client_sock, recv_buf, kRecvBufSize, 0)) <= 0) continue;
 
+		cout << "recv : " << recv_buf << endl;
+
 		char rBuf[kRecvBufSize] = {0};
 		for(int i=0; i<rLen; i++){
 			memset(rBuf, 0, sizeof(rBuf));
 			for(int k=0; k<rLen; k++, i++){
 				if(recv_buf[i] == '\n'){
-					i++;
+				// Below line used when using '}' character as a separator.
+				// After changing separator as '\n', that code makes an error.
+				//	i++;
 					break;
 				}
 				rBuf[k] = recv_buf[i];
@@ -282,7 +286,10 @@ void Client::recvCode(){
 
 void Client::recvCodeHandler(char code_data[]){
 	string cd = code_data;
-	if(cd.length() < 2) return;
+	if(cd.length() < 3){
+		cout << "Client->recvCodeHandler(): Bad command(" << cd << ")" << endl;
+		return;
+	}
 	int code;
 	sscanf(cd.substr(0, 3).c_str(), "%d", &code);
 	string data = cd.substr(3);
