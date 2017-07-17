@@ -206,7 +206,7 @@ int Client::connectServer(){
 	}
 
 	// for Non-Block socket
-	fcntl(client_sock, F_SETFL, O_NONBLOCK);
+//	fcntl(client_sock, F_SETFL, O_NONBLOCK);
 
 	tcp_status = true;
 
@@ -226,6 +226,7 @@ void Client::recvCode(){
 	clock_t eTime = clock();
 
 	while(true){
+			
 		loop_cycle = ((double)(clock() - eTime)) / CLOCKS_PER_SEC;
 		eTime = clock();
 
@@ -256,7 +257,7 @@ void Client::recvCode(){
 		int rLen = 0;
 		if((rLen = recv(client_sock, recv_buf, kRecvBufSize, 0)) <= 0) continue;
 
-		cout << "recv : " << recv_buf << endl;
+//		cout << "recv : " << recv_buf << endl;
 
 		char rBuf[kRecvBufSize] = {0};
 		for(int i=0; i<rLen; i++){
@@ -279,13 +280,13 @@ void Client::recvCode(){
 				recvCodeHandler(rBuf);
 			}
 		}
-
 	}
 }
 
 
 void Client::recvCodeHandler(char code_data[]){
 	string cd = code_data;
+//	cout << "codeData : " << code_data << endl;
 	if(cd.length() < 3){
 		cout << "Client->recvCodeHandler(): Bad command(" << cd << ")" << endl;
 		return;

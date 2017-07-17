@@ -31,7 +31,7 @@ int main(int argc, char* argv[]){
 
 		thread serial_thread(serialThread);
 		serial_thread.detach();
-		tcpThread();
+	//	tcpThread();
 	} else if(argc == 2 && strstr(argv[1], "stop")){
 		Util::stopProcess();
 	} else if(argc == 4 && strstr(argv[1], "-a")){
@@ -61,6 +61,7 @@ void serialThread(){
 	char buf[100];
 //	string buf;
 	while(true){
+		return;
 	//	spi->transfer(SET_ROLL, 30);
 	//	sleep(1);
 	//	spi->transfer(SET_P, 123.456);
