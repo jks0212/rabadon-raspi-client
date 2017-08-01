@@ -31,6 +31,7 @@ clean:
 ##	rm -f $(SERVPATH)$(TARGETSERV)
 #	rm -rf $(ETCPATH)
 	rm -rf /run/rabadon
+#	systemctl disable $(TARGETSERV)
 
 ##install: $(TARGET)
 ##	cp $(CURDIR)/$(TARGET) $(EXECPATH)$(TARGET)
@@ -39,5 +40,4 @@ clean:
 ##	mkdir $(ETCPATH)
 ##	cp $(CURDIR)/$(TARGETCONF) $(ETCPATH)$(TARGETCONF)
 ##	cp $(CURDIR)/$(TARGETSETTINGS) $(ETCPATH)$(TARGETSETTINGS)
-#	Service config
-#	cp 	
+#	systemctl enable $(TARGETSERV)
