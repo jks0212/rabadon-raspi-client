@@ -1,0 +1,13 @@
+#TODO Copy to this Path : /lib/systemd/system/
+[Unit]
+Description = Rabadon Client Daemon
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/home/ubuntu/rabadon/client/raspberry/rabadon
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
