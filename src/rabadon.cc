@@ -20,6 +20,7 @@ using namespace SPIPINO_CONST;
 
 void tcpThread();
 void serialThread();
+void enableModem();
 
 int main(int argc, char* argv[]){
 	signal(SIGPIPE, SIG_IGN);
@@ -47,6 +48,7 @@ int main(int argc, char* argv[]){
 void tcpThread(){
 	Client clnt;
 	while(true){
+		enableModem();
 		if(clnt.connectServer() != -1){
 			clnt.recvCode();
 		}
@@ -85,6 +87,13 @@ void serialThread(){
 			printf("\n");
 		}
 		*/
+	}
+}
+
+void enableModem(){
+	FILE* pipe = popen("usb_modeswitch -J -v 0x12d1 -p0x1f01", "r");
+	if(!pipe){
+		cout << "Fail to enable modem." << endl;
 	}
 }
 
