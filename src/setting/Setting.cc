@@ -14,7 +14,7 @@ string Setting::EMPTY_STR = "";
 ifstream Setting::cIfsSetting;
 ofstream Setting::cOfsSetting;
 
-string SETTING_FILE = "settings.json";
+string SETTING_FILE = "/usr/local/bin/rabadon/config/settings.json";
 
 int Setting::openSettingInstream(){
 	cIfsSetting.open(SETTING_FILE);//, ios::in);

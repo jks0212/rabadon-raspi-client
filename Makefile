@@ -4,7 +4,7 @@ OPTIONS = -pthread -o # -lwiringPi -o
 STDPP = -std=c++0x
 SRCS = src/rabadon.cc src/Util.cc src/Client.cc src/SpiPino.cc src/Drone.cc src/jsoncpp.cpp src/http/SimpleHttp.cc src/setting/Setting.cc
 OBJS = rabadon.o Util.o Client.o SpiPino.o Drone.o jsoncpp.o SimpleHttp.o Setting.o
-#TARGET = rabadon
+TARGET = rabadon
 #TARGETSERV = rabadon-client.service
 #TARGETCONF = rabadon.conf
 #TARGETSETTINGS = settings.json
@@ -25,12 +25,12 @@ $(OBJS): $(SRCS)
 
 clean:
 	rm -f $(OBJS) $(TARGET)
-	rm -f $(PIDFILE)
+#	rm -f $(PIDFILE)
 ##	rm -f $(EXECPATH)$(TARGET)
 ##	rm -f $(SYMBPATH)$(TARGETSERV)
 ##	rm -f $(SERVPATH)$(TARGETSERV)
 #	rm -rf $(ETCPATH)
-	rm -rf /run/rabadon
+#	rm -rf /run/rabadon
 #	systemctl disable $(TARGETSERV)
 
 ##install: $(TARGET)
