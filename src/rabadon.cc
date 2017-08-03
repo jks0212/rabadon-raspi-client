@@ -49,10 +49,11 @@ void tcpThread(){
 	Client clnt;
 	while(true){
 		enableModem();
+		sleep(2);
 		if(clnt.connectServer() != -1){
 			clnt.recvCode();
 		}
-		sleep(30);
+		sleep(7);
 	}
 }
 
