@@ -1,6 +1,7 @@
 #include "Drone.h"
 #include "SpiPino.h"
 #include "data/Data.h"
+#include "http/SimpleHttp.h"
 
 #ifndef _CLIENT_H
 #define _CLIENT_H
@@ -56,6 +57,9 @@ private:
 
 
 	void sendSettingsToIno(DronePid pid);
+
+	bool getDroneConfig();
+	void printConfig(DronePid pid, DroneTrim trim);
 /*
 	static const unsigned short kMotorBufSize = 44;
 	static const unsigned short kCodeLen = 3;

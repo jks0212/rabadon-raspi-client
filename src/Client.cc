@@ -93,7 +93,6 @@ int Client::connectServer(){
 		}
 	}
 
-
 	HttpResponse* res;
 //	string drone_id;
 	res = simpleHttp.get(API_SERVER_ADDR, "/v1/drone/serial/" + serial_num);
@@ -118,8 +117,12 @@ int Client::connectServer(){
 			return -1;
 		}
 	}
-	DronePid dronePid;
-	DroneTrim droneTrim;
+
+	bool wasSuccess = getDroneConfig();
+	if(wasSuccess != true){
+		return -1;
+	}
+	/*
 	res = simpleHttp.get(API_SERVER_ADDR, "/v1/drone/" + drone_id);
 	if(res == NULL){
 		cout << "Client->connectServer(): Fail to request drone PID and Trim" << endl;
@@ -156,7 +159,7 @@ int Client::connectServer(){
 			return -1;
 		}
 	}
-
+	*/
 
 
 	struct sockaddr_in server_addr;
@@ -295,12 +298,19 @@ void Client::recvCodeHandler(char code_data[]){
 	sscanf(cd.substr(0, 3).c_str(), "%d", &code);
 	string data = cd.substr(3);
 
+	cout << code << endl;
+
 	if(code == RECV_CONTROL){
 		if(cd.length() < 11) return;
 		string ctrl = cd.substr(0, 15);
 		cout << "ctrl : " << ctrl << endl;
 		sendControlToIno(data);
 	} else if(code == RECV_SETTING){
+		//TODO 
+		// Http request should be executed another thread.
+		// It can hold up control thread.
+		// That means control can be delayed.
+		getDroneConfig();
 	//	sendSettingsToIno(Util::rabadonDecoder(data));
 		sendSettingsToIno(dronePid);
 		cout << cd << endl;
@@ -387,5 +397,53 @@ void Client::sendSettingsToIno(string data){
 	spi->transfer(SET_YAW_D, yaw_d);
 }
 
+bool Client::getDroneConfig(){
+	SimpleHttp simpleHttp;
+	HttpResponse* res = simpleHttp.get(API_SERVER_ADDR, "/v1/drone/" + drone_id);
+	if(res == NULL){
+		cout << "Client->connectServer(): Fail to request drone PID and Trim" << endl;
+		return false;
+	} else{
+		if(res->code != 200){
+			cout << "Client->connectServer(): " << res->json["error"] << endl;
+			return false;
+		}
+
+		if(res->json["drone"] == Json::nullValue){
+			cout << "Client->connectServer(): Fail to get a drone PID and Trim" << endl;
+			return false;
+		}
+
+		try{
+			dronePid.roll_outer_p = res->json["drone"]["pid"]["roll"]["outer_p"].asDouble();
+			dronePid.roll_p = res->json["drone"]["pid"]["roll"]["p"].asDouble();
+			dronePid.roll_i = res->json["drone"]["pid"]["roll"]["i"].asDouble();
+			dronePid.roll_d = res->json["drone"]["pid"]["roll"]["d"].asDouble();
+			dronePid.pitch_outer_p = res->json["drone"]["pid"]["pitch"]["outer_p"].asDouble();
+			dronePid.pitch_p = res->json["drone"]["pid"]["pitch"]["p"].asDouble();
+			dronePid.pitch_i = res->json["drone"]["pid"]["pitch"]["i"].asDouble();
+			dronePid.pitch_d = res->json["drone"]["pid"]["pitch"]["d"].asDouble();
+			dronePid.yaw_outer_p = res->json["drone"]["pid"]["yaw"]["outer_p"].asDouble();
+			dronePid.yaw_p = res->json["drone"]["pid"]["yaw"]["p"].asDouble();
+			dronePid.yaw_i = res->json["drone"]["pid"]["yaw"]["i"].asDouble();
+			dronePid.yaw_d = res->json["drone"]["pid"]["yaw"]["d"].asDouble();
+			droneTrim.roll = res->json["drone"]["trim"]["roll"].asDouble();
+			droneTrim.pitch = res->json["drone"]["trim"]["pitch"].asDouble();
+			droneTrim.yaw = res->json["drone"]["trim"]["yaw"].asDouble();
+		} catch(Json::LogicError const & e){
+			cout << "Client->connectServer(): " << e.what() << endl;
+			return false;
+		}
+
+		return true;
+	}
+}
+
+void Client::printConfig(DronePid pid, DroneTrim trim){
+	cout << "roll outer p : " << pid.roll_outer_p << endl;
+	cout << "roll p : " << pid.roll_p << endl;
+	cout << "roll i : " << pid.roll_i << endl;
+	cout << "roll d : " << pid.roll_d << endl;
+}
 
 
